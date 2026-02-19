@@ -125,22 +125,3 @@ def exportar_planilha():
     except Exception as e:
         print(f"Erro: {e}")
         return False
-
-
-        #Código usado antes
-        # def exportar_planilha():
-        #     try:
-        #         with sqlite3.connect(Banco_Cadastros) as conn:
-        #             cursor = conn.cursor()
-        #             cursor.execute("SELECT * FROM usuarios")
-        #             dados = cursor.fetchall()
-        #
-        #             with open("planilha_usuarios.csv", "w", newline='', encoding='utf-8-sig') as arquivo:
-        #                 escrever = csv.writer(arquivo, delimiter= ';')
-        #                 escrever.writerow(["ID do Usuario", "Nome", "Sobrenome", "Email", "Idade", "Sexo", "Cpf", "Senha"])
-        #                 escrever.writerows(dados)
-        #
-        #         return True
-        #     except Exception as e:
-        #         print(f"Erro ao exportar: {e}")
-        #         return False

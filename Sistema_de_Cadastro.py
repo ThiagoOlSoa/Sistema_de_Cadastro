@@ -34,7 +34,6 @@ def caixa_cadastro():
         cpf_v = cpf.get()
         senha_v = senha.get()
 
-
         if not nome_v.isalpha():
             messagebox.showerror("Erro!", "Nome Inválido, Digite Apenas Letras!")
             return
