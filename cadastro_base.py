@@ -14,6 +14,7 @@ def cadastro_novo_usuario(dados):
         senha=dados["senha"]
     )
 
+
     if sucesso:
         print("Sucesso! Usuário salvo!")
         return True
