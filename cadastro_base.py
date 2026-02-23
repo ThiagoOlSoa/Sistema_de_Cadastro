@@ -19,6 +19,7 @@ def cadastro_novo_usuario(dados):
         print("Erro! Falha ao salvar Usuário!")
         return False
 
+
 def validar_senha(senha):
     #Função para Validação da senha
 

@@ -232,6 +232,7 @@ def menu_edicao(dados_antigos):
         texto.trace_add("write", processar)
         return texto
 
+
     def validacao_nome(valor):
         limpo = valor.replace(" ", "")
         if not valor: return "⚠ Campo obrigatório", "red"
