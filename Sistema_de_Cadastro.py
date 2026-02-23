@@ -1,5 +1,8 @@
 import tkinter as tk
 from tkinter import messagebox, simpledialog
+
+from attr.setters import validate
+
 import Banco_de_Dados
 import cadastro_base
 import os
@@ -9,83 +12,132 @@ Banco_de_Dados.criar_tabela()
 def caixa_cadastro():
     janela_cadastro = tk.Toplevel(janela)
     janela_cadastro.title("Cadastro de Usuários")
-    janela_cadastro.geometry("450x500")
+    janela_cadastro.geometry("450x650")
 
-    def campo_de_cadastro(texto, senha=False):
-        tk.Label(janela_cadastro, text=texto, font=("Arial", 18)).pack()
-        e = tk.Entry(janela_cadastro, show="*" if senha else "", width=30, font=("Arial", 14))
-        e.pack()
-        return e
+    def campo_de_cadastro(texto_label, validacao, senha=False):
+        tk.Label(janela_cadastro, text=texto_label, font=("Arial", 12, "bold")).pack(pady=(5, 0))
+        texto =  tk.StringVar()
+        entrada = tk.Entry(janela_cadastro, textvariable=texto, show="*" if senha else "", width=30, font=("Arial", 12))
+        entrada.pack()
+        aviso = tk.Label(janela_cadastro, text="", font=("Arial", 9))
+        aviso.pack()
 
-    nome = campo_de_cadastro("Nome")
-    sobrenome = campo_de_cadastro("Sobrenome")
-    email = campo_de_cadastro("Email")
-    idade = campo_de_cadastro("Idade")
-    sexo = campo_de_cadastro("Sexo")
-    cpf = campo_de_cadastro("CPF")
-    senha = campo_de_cadastro("Senha", senha=True)
+        def processar(*args):
+            valor = texto.get()
+            mensagem, cor = validacao(valor)
+            aviso.config(text=mensagem, fg=cor)
+
+        texto.trace_add("write", processar)
+        return texto
+
+    def validacao_nome(valor):
+        limpo = valor.replace(" ", "")
+        if not valor: return "", "black"
+        if limpo.isalpha() and len(limpo) > 1: return "✔ OK!", "green"
+        return "⚠ Digite apenas letras!", "red"
+
+    def validacao_email(valor):
+        if not valor: return "", "black"
+        if cadastro_base.validar_email(valor): return "✔ E-mail Válido!", "green"
+        return "⚠ E-mail Inválido, tente novamente!", "red"
+
+    def validacao_idade(valor):
+        if not valor: return "", "black"
+        if valor.isdigit() and 0 < int(valor) < 130: return "✔ Idade Válida!", "green"
+        return "⚠ Digite um número entre 1 e 130!", "red"
+
+    def validacao_cpf(valor):
+        if not valor: return "", "black"
+        if not valor.isdigit(): return "⚠ Digite apenas números!", "red"
+        if len(valor) < 11: return f"⚠ Faltam {11 - len(valor)} números!", "orange"
+        if len(valor) > 11: return "⚠ CPF Inválido, passou de 11 digitos!", "red"
+        if Banco_de_Dados.cpf_usado(valor): return "⚠ CPF já Cadastrado, tente novamente!", "red"
+        return "✔ CPF válido", "green"
+
+    def validacao_senha(valor):
+        if not valor: return "", "black"
+        if len(valor) < 8: return "⚠ Digite no mínimo 8 caracteres!", "red"
+        if not any(c.isupper()for c in valor): return "⚠ Precisa conter pelo menos 1 letra maiúscula!", "red"
+        if not any(c.islower() for c in valor): return "⚠ Precisa conter pelo menos 1 letra minúscula", "red"
+        if not any(c.isdigit() for c in valor): return "⚠ Precisa conter pelo menos 1 número", "red"
+        if not any(not c.isalnum() for c in valor): return "⚠ Precisa conter pelo menos 1 símbolo (@, #, etc)", "red"
+        return "✔ Senha forte!", "green"
+
+    nome = campo_de_cadastro("Nome", validacao_nome)
+    sobrenome = campo_de_cadastro("Sobrenome", validacao_nome)
+    email = campo_de_cadastro("Email", validacao_email)
+    idade = campo_de_cadastro("Idade", validacao_idade)
+    cpf = campo_de_cadastro("CPF", validacao_cpf)
+    senha = campo_de_cadastro("Senha", validacao_senha,senha=True)
+
+    tk.Label(janela_cadastro, text="Sexo", font=("Arial", 12, "bold")).pack(pady=(10, 0))
+    sexo = tk.StringVar(value="")
+    frame_sexo = tk.Frame(janela_cadastro)
+    frame_sexo.pack(pady=5)
+
+    botao_sexo = {
+        "variable": sexo,
+        "font": ("Arial", 12),
+        "width": 5,
+        "selectcolor": "#AED6F1",
+        "pady": 5,
+        "padx": 10
+    }
+
+    rb_m = tk.Radiobutton(frame_sexo, text="Masculino", value="Masculino", **botao_sexo)
+    rb_m.pack(side="left", padx=5)
+    rb_f = tk.Radiobutton(frame_sexo, text="Feminino", value="Feminino", **botao_sexo)
+    rb_f.pack(side="left", padx=5)
+    label_sexo = tk.Label(janela_cadastro, text="⚠ Selecione uma opção!", fg="red", font=("Arial", 9))
+    label_sexo.pack()
+
+    def atualizar(*args):
+        if sexo.get() != "":
+            label_sexo.config(text="✔ Opção selecionada", fg="green")
+
+    sexo.trace_add("write", atualizar)
 
     def salvar():
-        nome_v = nome.get()
-        sobrenome_v = sobrenome.get()
-        email_v = email.get()
+        nome_v = nome.get().strip()
+        sobrenome_v = sobrenome.get().strip()
+        email_v = email.get().strip()
         idade_v = idade.get()
         sexo_v = sexo.get()
         cpf_v = cpf.get()
         senha_v = senha.get()
 
-        if not nome_v.isalpha():
-            messagebox.showerror("Erro!", "Nome Inválido, Digite Apenas Letras!")
-            return
+        validacao_sexo = (sexo_v in ["Masculino", "Feminino"])
 
-        if not sobrenome_v.isalpha():
-            messagebox.showerror("Erro!", "Sobrenome Inválido, Digite Apenas Letras!")
-            return
+        if (validacao_nome(nome_v)[1] == "green" and
+            validacao_nome(sobrenome_v)[1] == "green" and
+            validacao_email(email_v)[1] == "green" and
+            validacao_idade(idade_v)[1] == "green" and
+            validacao_sexo and
+            validacao_cpf(cpf_v)[1] == "green" and
+            validacao_senha(senha_v)[1] == "green"):
 
-        if not cadastro_base.validar_email(email_v):
-            messagebox.showerror("Erro!", "E-mail Inválido, Tente Novamente!")
-            return
+            dados_usuario = {
+                "nome": nome_v,
+                "sobrenome": sobrenome_v,
+                "email": email_v,
+                "idade": idade_v,
+                "sexo": sexo_v,
+                "cpf": cpf_v,
+                "senha": senha_v
+            }
 
-        if not idade_v.isdigit() or not (0 < int(idade_v) <= 120):
-            messagebox.showerror("Erro!", "Idade Inválida, Digite uma idade entre 0 e 120 anos!")
-            return
-
-        if sexo_v.upper() not in ["M", "F"]:
-            messagebox.showerror("Erro!", "Digite apenas M para Masculino ou F para Feminino!")
-            return
-
-        if len(cpf_v) != 11 or not cpf_v.isdigit():
-            messagebox.showerror("Erro!", "CPF Inválido! Digite apenas os 11 números")
-            return
-
-        if Banco_de_Dados.cpf_usado(cpf_v):
-            messagebox.showerror("Erro!", "CPF já cadastrado, tente novamente!")
-            return
-
-        if not cadastro_base.validar_senha(senha_v):
-            messagebox.showerror("Senha Inválida!", "A senha deve conter pelo menos 8 caracteres \n\n"
-                    "Também deve conter ao menos 1 letra maiúscula, \n 1 letra minúscula, 1 número e 1 símbolo!")
-            return
-
-        dados_usuario = {
-            "nome": nome_v,
-            "sobrenome": sobrenome_v,
-            "email": email_v,
-            "idade": idade_v,
-            "sexo": sexo_v,
-            "cpf": cpf_v,
-            "senha": senha_v
-        }
-
-        if cadastro_base.usuario_banco(dados_usuario):
-            messagebox.showinfo("Sucesso!", "Usuário Cadastrado!")
-            janela_cadastro.destroy()
+            if cadastro_base.usuario_banco(dados_usuario):
+                messagebox.showinfo("Sucesso!", "Usuário Cadastrado!")
+                janela_cadastro.destroy()
+            else:
+                messagebox.showerror("Erro", "Erro ao Salvar no banco de Dados!")
         else:
-            messagebox.showerror("Erro", "Erro ao conectar com o banco de Dados!")
+            if not validacao_sexo:
+                label_sexo.config(text="⚠ Escolha o sexo para continuar!", fg="red")
+            messagebox.showwarning("Atenção", "Existem campos incorretos ou vazios!\nPor favor, corrija o que precisa para salvar!")
 
     btn_salvar = tk.Button(janela_cadastro, text="Salvar Cadastro", font=("Arial", 15), command=salvar, bg="green", fg="white", width=20)
     btn_salvar.pack(pady=20)
-
 
 def caixa_lista():
     conteudo = cadastro_base.lista()
@@ -161,61 +213,95 @@ def caixa_editar():
 
 def menu_edicao(dados_antigos):
     janela_menu = tk.Toplevel(janela)
-    janela_menu.title("Menu de Edição do Usuario")
-    janela_menu.geometry("450x500")
+    janela_menu.title("Editar Usuário")
+    janela_menu.geometry("450x550")
 
-    def campos_edicao(label, valor_padrao):
-        tk.Label(janela_menu, text=label, font=("Arial", 14)).pack()
-        ent = tk.Entry(janela_menu)
-        ent.insert(0, valor_padrao)
-        ent.pack(pady=5)
-        return ent
+    def campos_edicao(label, validacao, valor_inicial, senha=False):
+        tk.Label(janela_menu, text=label, font=("Arial", 12, "bold")).pack(pady=(5, 0))
+        texto = tk.StringVar(value=valor_inicial)
+        entrada = tk.Entry(janela_menu, textvariable=texto, font=("Arial", 12), show="*" if senha else "", width=30)
+        entrada.pack()
+        aviso = tk.Label(janela_menu, text="✔ Dado atual carregado", fg="green", font=("Arial", 9))
+        aviso.pack()
 
-    ent_nome = campos_edicao("Nome", dados_antigos[1])
-    ent_sobrenome = campos_edicao("Sobrenome", dados_antigos[2])
-    ent_email = campos_edicao("E-mail", dados_antigos[3])
-    ent_idade = campos_edicao("Idade", dados_antigos[4])
-    ent_cpf = campos_edicao("CPF", dados_antigos[6])
+        def processar(*args):
+            valor = texto.get()
+            mensagem, cor = validacao(valor)
+            aviso.config(text=mensagem, fg=cor)
+
+        texto.trace_add("write", processar)
+        return texto
+
+    def validacao_nome(valor):
+        limpo = valor.replace(" ", "")
+        if not valor: return "⚠ Campo obrigatório", "red"
+        if limpo.isalpha(): return "✔ OK!", "green"
+        return "⚠ Digite apenas letras!", "red"
+
+    def validacao_email(valor):
+        if cadastro_base.validar_email(valor): return "✔ E-mail Válido!", "green"
+        return "⚠ E-mail Inválido!", "red"
+
+    def validacao_idade(valor):
+        if valor.isdigit() and 0 < int(valor) < 130: return "✔ Idade Válida!", "green"
+        return "⚠ Digite um número entre 1 e 130!", "red"
+
+    def validacao_cpf(valor):
+        if not valor.isdigit(): return "⚠ Apenas números!", "red"
+        if len(valor) != 11: return "⚠ CPF precisa de 11 números", "red"
+        if valor != str(dados_antigos[6]) and Banco_de_Dados.cpf_usado(valor):
+            return "⚠ Este CPF pertence a outro usuário!", "red"
+        return "✔ CPF válido", "green"
+
+    id_usuario =dados_antigos[0]
+    ent_nome = campos_edicao("Nome", validacao_nome, dados_antigos[1])
+    ent_sobrenome = campos_edicao("Sobrenome", validacao_nome, dados_antigos[2])
+    ent_email = campos_edicao("Email", validacao_email, dados_antigos[3])
+    ent_idade = campos_edicao("Idade", validacao_idade, dados_antigos[4])
+    ent_cpf = campos_edicao("CPF", validacao_cpf, dados_antigos[6])
+
+    tk.Label(janela_menu, text="Sexo", font=("Arial", 12, "bold")).pack(pady=(10, 0))
+    sexo = tk.StringVar(value=dados_antigos[5])
+    frame_sexo = tk.Frame(janela_menu)
+    frame_sexo.pack(pady=5)
+
+    botao_sexo = {
+        "variable": sexo,
+        "font": ("Arial", 12),
+        "width": 5,
+        "selectcolor": "#AED6F1",
+        "pady": 5,
+        "padx": 10
+    }
+
+    tk.Radiobutton(frame_sexo, text="Masculino", value="Masculino", **botao_sexo).pack(side="left", padx=5)
+    tk.Radiobutton(frame_sexo, text="Feminino", value="Feminino", **botao_sexo).pack(side="left", padx=5)
+
 
     def salvar_edicao():
-        novo_nome = ent_nome.get()
-        novo_sobrenome = ent_sobrenome.get()
-        novo_email = ent_email.get()
+        novo_nome = ent_nome.get().strip()
+        novo_sobrenome = ent_sobrenome.get().strip()
+        novo_email = ent_email.get().strip()
         nova_idade = ent_idade.get()
         novo_cpf = ent_cpf.get()
-        id_usuario = dados_antigos[0]
 
-        if not novo_nome.isalpha():
-            messagebox.showerror("Erro!", "Nome Inválido, Digite Apenas Letras!")
-            return
+        if (validacao_nome(novo_nome)[1] == "green" and
+            validacao_nome(novo_sobrenome)[1] == "green" and
+            validacao_email(novo_email)[1] == "green" and
+            validacao_idade(nova_idade)[1] == "green" and
+            validacao_cpf(novo_cpf)[1] == "green"):
 
-        if not novo_sobrenome.isalpha():
-            messagebox.showerror("Erro!", "Sobrenome Inválido, Digite Apenas Letras!")
-            return
+            sucesso = Banco_de_Dados.editar(id_usuario, novo_nome, novo_sobrenome, novo_email, nova_idade, novo_cpf)
 
-        if not cadastro_base.validar_email(novo_email):
-            messagebox.showerror("Erro!", "E-mail Inválido, Tente Novamente!")
-            return
+            if sucesso:
+                messagebox.showinfo("Sucesso!", "Dados atualizados com sucesso!")
+                janela_menu.destroy()
 
-        if not nova_idade.isdigit() or not (0 < int(nova_idade) <= 120):
-            messagebox.showerror("Erro!", "Idade Inválida, Digite uma idade entre 0 e 120 anos!")
-            return
+            else:
+                messagebox.showerror("Erro!", "Falha ao alterar informações no Banco!")
 
-        if len(novo_cpf) != 11 or not novo_cpf.isdigit():
-            messagebox.showerror("Erro!", "CPF Inválido! Digite apenas os 11 números")
-            return
-
-        if novo_cpf != dados_antigos[6] and Banco_de_Dados.cpf_usado(novo_cpf):
-            messagebox.showerror("Erro!", "CPF já cadastrado, tente novamente!")
-            return
-
-        sucesso = Banco_de_Dados.editar(id_usuario, novo_nome, novo_sobrenome, novo_email, nova_idade, novo_cpf)
-
-        if sucesso:
-            messagebox.showinfo("Sucesso!", "Dados alterados com sucesso!")
-            janela_menu.destroy()
         else:
-            messagebox.showerror("Erro!", "Falha ao alterar informações no Banco!")
+            messagebox.showwarning("Atenção", "Verifique se todos os campos estão corretos!")
 
     tk.Button(janela_menu, text="Salvar Edição", bg="green", fg="white", font=("Arial", 14), command=salvar_edicao).pack(pady=20)
 
