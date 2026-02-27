@@ -125,3 +125,15 @@ def exportar_planilha():
     except Exception as e:
         print(f"Erro: {e}")
         return False
+
+def limpar_banco():
+    try:
+        with sqlite3.connect(Banco_Cadastros) as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM usuarios")
+            cursor.execute("DELETE FROM sqlite_sequence WHERE name='usuarios'")
+            conn.commit()
+            return True
+    except sqlite3.Error as e:
+        print(f"Erro ao limpar banco: {e}")
+        return False

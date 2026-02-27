@@ -1,8 +1,5 @@
 import tkinter as tk
 from tkinter import messagebox, simpledialog
-
-from attr.setters import validate
-
 import Banco_de_Dados
 import cadastro_base
 import os
@@ -306,6 +303,35 @@ def menu_edicao(dados_antigos):
 
     tk.Button(janela_menu, text="Salvar Edição", bg="green", fg="white", font=("Arial", 14), command=salvar_edicao).pack(pady=20)
 
+def menu_adm():
+    janela_opc = tk.Toplevel(janela)
+    janela_opc.title("Painel de Controle (Admin)")
+    janela_opc.geometry("300x200")
+
+    tk.Label(janela_opc, text="Selecione uma opção", font=("Arial", 16, "bold")).pack(pady=15)
+
+    def planilha():
+        if Banco_de_Dados.exportar_planilha():
+            messagebox.showinfo("Sucesso!", "Planilha exportada com sucesso!")
+
+            try:
+                os.startfile("Usuarios_Planilha.xlsx")
+            except Exception as e:
+                messagebox.showwarning("Aviso!", "Planilha gerada, mas não aberta automaticamente!")
+        else:
+            messagebox.showerror("Erro!", "Falha ao exportar planilha! Verifique se ela ja está aberta.")
+    tk.Button(janela_opc, text="Abrir Planilha", bg="green", fg="white", width=30, command=planilha, font=("Arial", 14)).pack(pady=10, padx=20)
+
+    def limpar_planilha():
+        confirmar = messagebox.askyesno("PERIGO", "Essa ação apagará TODOS os usuários do banco de dados!\n Deseja Continuar?")
+        if confirmar:
+            if Banco_de_Dados.limpar_banco():
+                messagebox.showinfo("Sucesso!", "Banco de dados zerado!")
+                janela_opc.destroy()
+            else:
+                messagebox.showerror("Erro!", "Falha ao limpar banco de dados!")
+    tk.Button(janela_opc, text="Limpar Banco de Dados", bg="green", fg="white", width=30, command=limpar_planilha, font=("Arial", 14)).pack(pady=10, padx=20)
+
 def admin():
     cpf_adm = "000"
     senha_adm = "ADM123"
@@ -319,15 +345,7 @@ def admin():
         senha = simpledialog.askstring("Usuário Admin", "Digite a Senha:", show="*")
         if senha == senha_adm:
             messagebox.showinfo("Sucesso!", "Usuário Admin autenticado com sucesso!")
-            if Banco_de_Dados.exportar_planilha():
-                messagebox.showinfo("Sucesso", "Planilha exportada com sucesso!")
-
-                try:
-                    os.startfile("Usuarios_Planilha.xlsx")
-                except Exception as e:
-                    messagebox.showwarning("Aviso!", "Planilha gerada, mas não aberta automaticamente!")
-            else:
-                messagebox.showerror("Erro!", "Falha ao exportar planilha! Verifique se ela já está aberta")
+            menu_adm()
         else:
             messagebox.showerror("Acesso Negado", "Senha do Admin Inválida!")
     else:
