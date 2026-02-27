@@ -19,30 +19,6 @@ def cadastro_novo_usuario(dados):
         print("Erro! Falha ao salvar Usuário!")
         return False
 
-
-def validar_senha(senha):
-    #Função para Validação da senha
-
-    maiuscula = False
-    minuscula = False
-    numero = False
-    simbolo = False
-
-    for c in senha: #Validação de obrigatoriedades da senha
-        if c.isupper():
-            maiuscula = True
-        elif c.islower():
-            minuscula = True
-        elif c.isdigit():
-            numero = True
-        elif not c.isalnum():
-            simbolo = True
-
-    if maiuscula and minuscula and numero and simbolo and len(senha) >= 8:
-        return True
-    else:
-        return False
-
 def  validar_email(email):
     #Função para Validação de e-mail
 
