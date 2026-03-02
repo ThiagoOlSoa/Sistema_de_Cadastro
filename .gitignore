@@ -1,0 +1,13 @@
+# Banco de Dados (Segurança)
+*.db
+
+# Arquivos de saída (Relatórios)
+*.xlsx
+
+# Arquivos temporários do Python
+__pycache__/
+*.pyc
+
+# Ambientes virtuais (se você usar)
+venv/
+.venv/
